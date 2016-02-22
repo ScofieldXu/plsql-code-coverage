@@ -114,6 +114,25 @@ public class Scanner {
         return x;
     }
 
+    int scanNotAzIdent(int pos) {
+        int x = pos;
+        //save current environmnet
+        int _line = this.line;
+        int _col = this.col;
+        //parse i18n characters ident use nest
+        this.start++;
+        Token next = scan1(this.istart);
+        //recover environment
+        this.start = x;
+        this.line = _line;
+        this.col = _col;
+        if (next.ttype == TokenType.Ident) {
+            return next.pos + next.str.length();
+        } else {
+            return x + 1;
+        }
+    }
+
     int ScanInt(int pos) {
         int x = pos;
         while (x < len && get(x) >= '0' && get(x) <= '9') {
@@ -324,7 +343,10 @@ public class Scanner {
                 } else if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
                     return tokx(TokenType.Ident, scanIdent(this.start));
                 } else {
-                    throw new ScanException("unhandled char: " + c + " at line" + this.line);
+                    //i18n characters are allowed for plsql like view name
+                    // or view column name, should we supported?
+                    return tokx(TokenType.Ident, scanNotAzIdent(this.start));
+                    //throw new ScanException("unhandled char: " + c + " at line" + this.line);
                 }
         }
     }

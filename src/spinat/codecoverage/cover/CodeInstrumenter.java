@@ -5,9 +5,13 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CodeInstrumenter {
 
+	private static final String behind_statement_regex = "SQL%(ROWCOUNT|FOUND|NOTFOUND|ISOPEN)";
+	
     public static class InstrumentedStatement {
 
         public final Range range;
@@ -61,8 +65,17 @@ public class CodeInstrumenter {
         for (Range r : ranges) {
             i++;
             is.add(new InstrumentedStatement(r, i));
-            patches.add(new Patch(r.start, r.start,
-                    "\"$log\"(" + (i + 1) + ");"));
+            
+            Pattern pattern = Pattern.compile(
+            		behind_statement_regex, Pattern.CASE_INSENSITIVE);
+    		Matcher matcher = pattern.matcher(body_src.substring(r.start, r.end));
+            if (matcher.find()) {
+        		patches.add(new Patch(r.end + 1, r.end + 1,
+                        "\"$log\"(" + (i + 1) + ");"));
+            } else {
+        		patches.add(new Patch(r.start, r.start,
+                        "\"$log\"(" + (i + 1) + ");"));
+            }
         }
 
         String newSrc = Patch.applyPatches(body_src, patches);

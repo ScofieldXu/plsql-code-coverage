@@ -1201,6 +1201,12 @@ public class Ast {
             this.to = to;
         }
     }
+    
+    public static class IndicesOrValuesOfBounds extends BoundsClause {
+    	public IndicesOrValuesOfBounds() {
+    		
+    	}
+    }
 
     /*| ForAllStatement of ident * bounds_clause *  (Tokens.token list)*/
     public static class ForAllStatement extends Statement {

@@ -88,6 +88,9 @@ public class Parser {
     Pa<String> pkw_in_out = c.forkw2("in", "out");
     Pa<String> pkw_nocopy = c.forkw("nocopy");
     Pa<String> pkw_from = c.forkw("from");
+    //oracle 10g 'forall idx indices of' and 'forall values of'
+    Pa<String> pkw_indices_of = c.forkw2("indices", "of");
+    Pa<String> pkw_values_of = c.forkw2("values", "of");
     // do not care about the string, what operators are there else?
     Pa pkw_multiset_union_all = c.seq2(c.forkw2("multiset", "union"), c.forkw("all"));
 
@@ -1563,7 +1566,7 @@ public class Parser {
         if (r == null || r.v.getStart() >= 0) {
             return r;
         } else {
-            r.v.setRange(s.head().pos, r.next.head().ipos);
+            r.v.setRange(s.head().pos, r.next.head().ipos, s.head().line);
             return r;
         }
     }
@@ -1844,10 +1847,22 @@ public class Parser {
         }
         Res<Ast.Ident> rident = pIdent.pa(r.next);
         Res rin = pkw_in.pa(rident.next);
-        Res<T3<Ast.Expression, String, Ast.Expression>> rbounds = c.seq3(pExpr, c.pDotDot, pExpr).pa(rin.next);
-        Res<List<Token>> rsql = paBalancedParenAndNoSemi(rbounds.next);
-        return new Res<Ast.Statement>(new Ast.ForAllStatement(rident.v, new Ast.FromToBounds(rbounds.v.f1, rbounds.v.f3), rsql.v), rsql.next);
-
+        {
+        	Res rof = pkw_indices_of.pa(rin.next);
+        	if (rof == null) {
+        		rof = pkw_values_of.pa(rin.next);
+        	}
+        	if (rof != null) {
+        		Res<Ast.Ident> ofident = pIdent.pa(rof.next);
+        		Res<List<Token>> rsql = paBalancedParenAndNoSemi(ofident.next);
+    	        return new Res<Ast.Statement>(new Ast.ForAllStatement(rident.v, new Ast.IndicesOrValuesOfBounds(), rsql.v), rsql.next);
+        	}
+        }
+        {
+	        Res<T3<Ast.Expression, String, Ast.Expression>> rbounds = c.seq3(pExpr, c.pDotDot, pExpr).pa(rin.next);
+	        Res<List<Token>> rsql = paBalancedParenAndNoSemi(rbounds.next);
+	        return new Res<Ast.Statement>(new Ast.ForAllStatement(rident.v, new Ast.FromToBounds(rbounds.v.f1, rbounds.v.f3), rsql.v), rsql.next);
+        }
     }
 
     Res<Ast.Statement> paForLoop(Seq s) {

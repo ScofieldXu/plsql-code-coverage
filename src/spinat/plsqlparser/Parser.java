@@ -1566,7 +1566,7 @@ public class Parser {
         if (r == null || r.v.getStart() >= 0) {
             return r;
         } else {
-            r.v.setRange(s.head().pos, r.next.head().ipos, s.head().line);
+            r.v.setRange(s.head().pos, r.next.head().ipos);
             return r;
         }
     }
